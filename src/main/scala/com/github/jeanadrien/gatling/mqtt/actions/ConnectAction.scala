@@ -3,7 +3,6 @@ package com.github.jeanadrien.gatling.mqtt.actions
 import com.github.jeanadrien.gatling.mqtt.client.{FuseSourceConnectionListener, MqttCommands}
 import com.github.jeanadrien.gatling.mqtt.protocol.{ConnectionSettings, MqttComponents}
 import io.gatling.commons.stats._
-import io.gatling.commons.util.ClockSingleton._
 import io.gatling.core.CoreComponents
 import io.gatling.core.Predef._
 import io.gatling.core.action.Action
@@ -35,15 +34,16 @@ class ConnectAction(
 
             // connect
             implicit val timeout = Timeout(1 minute) // TODO check how to configure this
-        val requestStartDate = nowMillis
+        val requestStartDate = clock.nowMillis
             (mqtt ? MqttCommands.Connect).mapTo[MqttCommands].onComplete {
                 case Success(MqttCommands.ConnectAck) =>
-                    val connectTiming = timings(requestStartDate)
+                    val requestEndDate = clock.nowMillis
 
                     statsEngine.logResponse(
                         session,
                         requestName,
-                        connectTiming,
+                        requestStartDate,
+                        requestEndDate,
                         OK,
                         None,
                         None
@@ -53,12 +53,13 @@ class ConnectAction(
                         set("engine", mqtt).
                         set("connectionId", connectionId)
                 case Failure(th) =>
-                    val connectTiming = timings(requestStartDate)
+                    val requestEndDate = clock.nowMillis
                     logger.warn(s"${connectionId}: Failed to connect to MQTT: ${th}")
                     statsEngine.logResponse(
                         session,
                         requestName,
-                        connectTiming,
+                        requestStartDate,
+                        requestEndDate,
                         KO,
                         None,
                         Some(th.getMessage)

@@ -7,7 +7,6 @@ import com.github.jeanadrien.gatling.mqtt.client.MqttCommands
 import com.github.jeanadrien.gatling.mqtt.client.MqttQoS.MqttQoS
 import com.github.jeanadrien.gatling.mqtt.protocol.MqttComponents
 import io.gatling.commons.stats._
-import io.gatling.commons.util.ClockSingleton._
 import io.gatling.core.CoreComponents
 import io.gatling.core.action.Action
 import io.gatling.core.session._
@@ -36,19 +35,20 @@ class SubscribeAction(
     } yield {
         implicit val timeout = Timeout(1 minute) // TODO check how to configure this
 
-        val requestStartDate = nowMillis
+        val requestStartDate = clock.nowMillis
 
         val requestName = "subscribe"
 
         logger.debug(s"${connectionId}: Execute ${requestName}:${resolvedTopic}")
         (connection ? MqttCommands.Subscribe((resolvedTopic -> qos) :: Nil)).mapTo[MqttCommands].onComplete {
             case Success(MqttCommands.SubscribeAck) =>
-                val subscribeTimings = timings(requestStartDate)
+                val requestEndDate = clock.nowMillis
 
                 statsEngine.logResponse(
                     session,
                     requestName,
-                    subscribeTimings,
+                    requestStartDate,
+                    requestEndDate,
                     OK,
                     None,
                     None // Some(new String(value)) // FIXME see equiv in Fuse client
@@ -56,13 +56,14 @@ class SubscribeAction(
 
                 next ! session
             case Failure(th) =>
-                val subscribeTimings = timings(requestStartDate)
+                val requestEndDate = clock.nowMillis
                 logger.warn(s"${connectionId}: Failed to SUBSCRIBE on ${resolvedTopic}: ${th}")
 
                 statsEngine.logResponse(
                     session,
                     requestName,
-                    subscribeTimings,
+                    requestStartDate,
+                    requestEndDate,
                     KO,
                     None,
                     Some(th.getMessage)

@@ -7,7 +7,6 @@ import com.github.jeanadrien.gatling.mqtt.client.MqttCommands
 import com.github.jeanadrien.gatling.mqtt.client.MqttQoS.MqttQoS
 import com.github.jeanadrien.gatling.mqtt.protocol.MqttComponents
 import io.gatling.commons.stats.{KO, OK}
-import io.gatling.commons.util.ClockSingleton._
 import io.gatling.core.CoreComponents
 import io.gatling.core.action.Action
 import io.gatling.core.session._
@@ -43,7 +42,7 @@ class PublishAndWaitAction(
     } yield {
         implicit val messageTimeout = Timeout(timeout)
 
-        val requestStartDate = nowMillis
+        val requestStartDate = clock.nowMillis
 
         val requestName = "publish and wait"
 
@@ -59,12 +58,13 @@ class PublishAndWaitAction(
             retain = retain
         )).mapTo[MqttCommands] onComplete {
             case Success(MqttCommands.FeedbackReceived) =>
-                val latencyTimings = timings(requestStartDate)
+                val requestEndDate = clock.nowMillis
 
                 statsEngine.logResponse(
                     session,
                     requestName,
-                    latencyTimings,
+                    requestStartDate,
+                    requestEndDate,
                     OK,
                     None,
                     None
@@ -72,12 +72,13 @@ class PublishAndWaitAction(
 
                 next ! session
             case Failure(th) =>
-                val latencyTimings = timings(requestStartDate)
+                val requestEndDate = clock.nowMillis
 
                 statsEngine.logResponse(
                     session,
                     requestName,
-                    latencyTimings,
+                    requestStartDate,
+                    requestEndDate,
                     KO,
                     None,
                     th match {

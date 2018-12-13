@@ -7,7 +7,6 @@ import com.github.jeanadrien.gatling.mqtt.client.MqttCommands
 import com.github.jeanadrien.gatling.mqtt.client.MqttQoS.MqttQoS
 import com.github.jeanadrien.gatling.mqtt.protocol.MqttComponents
 import io.gatling.commons.stats.{KO, OK}
-import io.gatling.commons.util.ClockSingleton._
 import io.gatling.core.CoreComponents
 import io.gatling.core.action.Action
 import io.gatling.core.session._
@@ -40,7 +39,7 @@ class PublishAction(
     } yield {
         implicit val timeout = Timeout(1 minute) // TODO check how to configure this
 
-        val requestStartDate = nowMillis
+        val requestStartDate = clock.nowMillis
 
         val requestName = "publish"
 
@@ -50,12 +49,13 @@ class PublishAction(
             resolvedTopic, resolvedPayload, qos, retain
         )).mapTo[MqttCommands].onComplete {
             case Success(MqttCommands.PublishAck) =>
-                val publishTimings = timings(requestStartDate)
+                val requestEndDate = clock.nowMillis
 
                 statsEngine.logResponse(
                     session,
                     requestName,
-                    publishTimings,
+                    requestStartDate,
+                    requestEndDate,
                     OK,
                     None,
                     None
@@ -63,12 +63,13 @@ class PublishAction(
 
                 next ! session
             case Failure(th) =>
-                val publishTimings = timings(requestStartDate)
+                val requestEndDate = clock.nowMillis
                 logger.warn(s"${connectionId}: Failed to publish on ${resolvedTopic}: ${th}")
                 statsEngine.logResponse(
                     session,
                     requestName,
-                    publishTimings,
+                    requestStartDate,
+                    requestEndDate,
                     KO,
                     None,
                     Some(th.getMessage)

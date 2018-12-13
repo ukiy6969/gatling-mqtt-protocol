@@ -26,15 +26,15 @@ case class MqttComponents(
         }
     }
 
-    override def onStart : Option[(Session) => Session] = Some(s => {
+    override def onStart : (Session) => Session = s => {
         logger.debug("MqttComponents: onStart");
         s
-    })
+    }
 
-    override def onExit : Option[(Session) => Unit] = Some(s => {
+    override def onExit : (Session) => Unit = s => {
         logger.debug("MqttComponents: onExit");
         s("engine").asOption[ActorRef].foreach { mqtt =>
             system.stop(mqtt)
         }
-    })
+    }
 }

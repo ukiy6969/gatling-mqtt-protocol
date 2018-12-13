@@ -1,7 +1,7 @@
 package com.github.jeanadrien.gatling.mqtt.actions
 
 import com.github.jeanadrien.gatling.mqtt.protocol.MqttComponents
-import io.gatling.commons.util.ClockSingleton._
+import io.gatling.commons.util.DefaultClock
 import io.gatling.core.CoreComponents
 import io.gatling.core.action.ExitableAction
 import io.gatling.core.stats.message.ResponseTimings
@@ -15,9 +15,8 @@ abstract class MqttAction(
     coreComponents : CoreComponents
 ) extends ExitableAction with NameGen {
 
-    val statsEngine = coreComponents.statsEngine
+    val clock = new DefaultClock
 
-    def timings(requestStartDate : Long) =
-        ResponseTimings(startTimestamp = requestStartDate, endTimestamp = nowMillis)
+    val statsEngine = coreComponents.statsEngine
 
 }
