@@ -17,6 +17,7 @@ import scala.util.{Failure, Success}
   *
   */
 class SubscribeAction(
+    requestName    : Expression[String],
     mqttComponents : MqttComponents,
     coreComponents : CoreComponents,
     topic          : Expression[String],
@@ -29,6 +30,7 @@ class SubscribeAction(
     override val name = genName("mqttSubscribe")
 
     override def execute(session : Session) : Unit = recover(session)(for {
+        _requestName <- requestName(session)
         connection <- session("engine").validate[ActorRef]
         connectionId <- session("connectionId").validate[String]
         resolvedTopic <- topic(session)
@@ -37,8 +39,6 @@ class SubscribeAction(
 
         val requestStartDate = clock.nowMillis
 
-        val requestName = "subscribe"
-
         logger.debug(s"${connectionId}: Execute ${requestName}:${resolvedTopic}")
         (connection ? MqttCommands.Subscribe((resolvedTopic -> qos) :: Nil)).mapTo[MqttCommands].onComplete {
             case Success(MqttCommands.SubscribeAck) =>
@@ -46,7 +46,7 @@ class SubscribeAction(
 
                 statsEngine.logResponse(
                     session,
-                    requestName,
+                    _requestName,
                     requestStartDate,
                     requestEndDate,
                     OK,
@@ -61,7 +61,7 @@ class SubscribeAction(
 
                 statsEngine.logResponse(
                     session,
-                    requestName,
+                    _requestName,
                     requestStartDate,
                     requestEndDate,
                     KO,

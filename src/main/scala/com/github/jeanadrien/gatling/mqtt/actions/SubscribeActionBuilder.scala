@@ -12,8 +12,9 @@ import org.fusesource.mqtt.client.QoS
   *
   */
 case class SubscribeActionBuilder(
-    topic : Expression[String],
-    qos   : MqttQoS = MqttQoS.AtMostOnce
+    requestName : Expression[String],
+    topic       : Expression[String],
+    qos         : MqttQoS = MqttQoS.AtMostOnce
 ) extends MqttActionBuilder {
 
     def qos(newQos : MqttQoS) : SubscribeActionBuilder = this.modify(_.qos).setTo(newQos)
@@ -28,6 +29,7 @@ case class SubscribeActionBuilder(
         ctx : ScenarioContext, next : Action
     ) : Action = {
         new SubscribeAction(
+            requestName,
             mqttComponents(ctx),
             ctx.coreComponents,
             topic,

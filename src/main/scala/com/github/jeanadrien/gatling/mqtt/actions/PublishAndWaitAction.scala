@@ -18,7 +18,8 @@ import scala.util.{Failure, Success}
   *
   */
 class PublishAndWaitAction(
-    mqttComponents : MqttComponents,
+    requestName     : Expression[String],
+    mqttComponents  : MqttComponents,
     coreComponents  : CoreComponents,
     topic           : Expression[String],
     payload         : Expression[Array[Byte]],
@@ -35,6 +36,7 @@ class PublishAndWaitAction(
     override val name = genName("mqttPublishAndWait")
 
     override def execute(session : Session) : Unit = recover(session)(for {
+        _requestName <- requestName(session)
         connection <- session("engine").validate[ActorRef]
         connectionId <- session("connectionId").validate[String]
         resolvedTopic <- topic(session)
@@ -43,8 +45,6 @@ class PublishAndWaitAction(
         implicit val messageTimeout = Timeout(timeout)
 
         val requestStartDate = clock.nowMillis
-
-        val requestName = "publish and wait"
 
         logger.debug(s"${connectionId} : Execute ${requestName} Payload: ${resolvedPayload}")
 
@@ -62,7 +62,7 @@ class PublishAndWaitAction(
 
                 statsEngine.logResponse(
                     session,
-                    requestName,
+                    _requestName,
                     requestStartDate,
                     requestEndDate,
                     OK,
@@ -76,7 +76,7 @@ class PublishAndWaitAction(
 
                 statsEngine.logResponse(
                     session,
-                    requestName,
+                    _requestName,
                     requestStartDate,
                     requestEndDate,
                     KO,

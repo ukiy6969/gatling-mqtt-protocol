@@ -11,6 +11,7 @@ import io.gatling.core.structure.ScenarioContext
   *
   */
 case class PublishActionBuilder(
+    requestName: Expression[String],
     topic : Expression[String],
     payload : Expression[Array[Byte]],
     qos     : MqttQoS = MqttQoS.AtMostOnce,
@@ -31,6 +32,7 @@ case class PublishActionBuilder(
         ctx : ScenarioContext, next : Action
     ) : Action = {
         new PublishAction(
+            requestName,
             mqttComponents(ctx),
             ctx.coreComponents,
             topic,

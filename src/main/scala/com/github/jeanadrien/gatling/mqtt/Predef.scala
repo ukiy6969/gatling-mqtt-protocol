@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets
 
 import com.github.jeanadrien.gatling.mqtt.actions._
 import com.github.jeanadrien.gatling.mqtt.protocol.MqttProtocolBuilder
+import io.gatling.core.Predef._
 import io.gatling.core.config.GatlingConfiguration
 import io.gatling.core.session._
 
@@ -14,17 +15,19 @@ object Predef {
 
     def mqtt(implicit configuration : GatlingConfiguration) = MqttProtocolBuilder(configuration)
 
-    def connect = ConnectActionBuilder()
+    def mqtt(requestName: Expression[String]) = Mqtt(requestName)
 
-    def subscribe(topic : Expression[String]) = SubscribeActionBuilder(topic)
+    def connect = ConnectActionBuilder("connect")
+
+    def subscribe(topic : Expression[String]) = SubscribeActionBuilder("subscribe", topic)
 
     def publish[T <% MqttPayload](
         topic : Expression[String], payload : Expression[T]
-    ) = PublishActionBuilder(topic, payload.map(_.toByteArray))
+    ) = PublishActionBuilder("publish", topic, payload.map(_.toByteArray))
 
     def publishAndWait[T <% MqttPayload](
         topic : Expression[String], payload : Expression[T]
-    ) = PublishAndWaitActionBuilder(topic, payload.map(_.toByteArray))
+    ) = PublishAndWaitActionBuilder("publish and wait", topic, payload.map(_.toByteArray))
 
     def waitForMessages = WaitForMessagesActionBuilder
 

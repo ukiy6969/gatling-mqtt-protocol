@@ -18,6 +18,7 @@ import scala.util.{Failure, Success}
   *
   */
 class PublishAction(
+    requestName    : Expression[String],
     mqttComponents : MqttComponents,
     coreComponents : CoreComponents,
     topic          : Expression[String],
@@ -32,6 +33,7 @@ class PublishAction(
     override val name = genName("mqttPublish")
 
     override def execute(session : Session) : Unit = recover(session)(for {
+        _requestName <- requestName(session)
         connection <- session("engine").validate[ActorRef]
         connectionId <- session("connectionId").validate[String]
         resolvedTopic <- topic(session)
@@ -40,8 +42,6 @@ class PublishAction(
         implicit val timeout = Timeout(1 minute) // TODO check how to configure this
 
         val requestStartDate = clock.nowMillis
-
-        val requestName = "publish"
 
         logger.debug(s"${connectionId}: Execute ${requestName}:${resolvedTopic} Payload: ${resolvedPayload}")
 
@@ -53,7 +53,7 @@ class PublishAction(
 
                 statsEngine.logResponse(
                     session,
-                    requestName,
+                    _requestName,
                     requestStartDate,
                     requestEndDate,
                     OK,
@@ -67,7 +67,7 @@ class PublishAction(
                 logger.warn(s"${connectionId}: Failed to publish on ${resolvedTopic}: ${th}")
                 statsEngine.logResponse(
                     session,
-                    requestName,
+                    _requestName,
                     requestStartDate,
                     requestEndDate,
                     KO,

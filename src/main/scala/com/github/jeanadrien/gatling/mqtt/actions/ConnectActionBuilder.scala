@@ -12,6 +12,7 @@ import org.fusesource.mqtt.client.QoS
   *
   */
 case class ConnectActionBuilder(
+    requestName: Expression[String],
     connectionSettings : ConnectionSettings = ConnectionSettings(
         clientId = None, // default : Random
         cleanSession = None, // default : true
@@ -45,6 +46,7 @@ case class ConnectActionBuilder(
         ctx : ScenarioContext, next : Action
     ) : Action = {
         new ConnectAction(
+            requestName,
             mqttComponents(ctx),
             ctx.coreComponents,
             connectionSettings,

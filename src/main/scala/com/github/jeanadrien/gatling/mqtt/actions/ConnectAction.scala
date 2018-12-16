@@ -6,8 +6,10 @@ import io.gatling.commons.stats._
 import io.gatling.core.CoreComponents
 import io.gatling.core.Predef._
 import io.gatling.core.action.Action
+import io.gatling.core.session.Expression
 import akka.pattern.ask
 import akka.util.Timeout
+
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -15,7 +17,8 @@ import scala.util.{Failure, Success}
   *
   */
 class ConnectAction(
-    mqttComponents : MqttComponents,
+    requestName        : Expression[String],
+    mqttComponents     : MqttComponents,
     coreComponents     : CoreComponents,
     connectionSettings : ConnectionSettings,
     val next           : Action
@@ -25,11 +28,12 @@ class ConnectAction(
 
     override val name = genName("mqttConnect")
 
-    override def execute(session : Session) : Unit = recover(session) {
+    override def execute(session : Session) : Unit = recover(session) (for {
+        _requestName <- requestName(session)
+    } yield {
         val connectionId = genName("mqttClient")
         mqttComponents.mqttEngine(session, connectionSettings, connectionId).flatMap { mqtt =>
 
-            val requestName = "connect"
             logger.debug(s"${connectionId}: Execute ${requestName}")
 
             // connect
@@ -41,7 +45,7 @@ class ConnectAction(
 
                     statsEngine.logResponse(
                         session,
-                        requestName,
+                        _requestName,
                         requestStartDate,
                         requestEndDate,
                         OK,
@@ -57,7 +61,7 @@ class ConnectAction(
                     logger.warn(s"${connectionId}: Failed to connect to MQTT: ${th}")
                     statsEngine.logResponse(
                         session,
-                        requestName,
+                        _requestName,
                         requestStartDate,
                         requestEndDate,
                         KO,
@@ -67,6 +71,6 @@ class ConnectAction(
                     next ! session.markAsFailed
             }
         }
-    }
+    })
 
 }
